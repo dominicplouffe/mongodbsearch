@@ -3,6 +3,13 @@ mongodbsearch
 
 mongodbsearch is a simple Full-Text Indexer and Search engine for MongoDB built using python.
 
+Requirements
+------------
+
+MongoDB (Tested on v 1.8.2)
+Python 2.6+ (I haven't tested on Python 3.x but is should work)
+pymongo
+
 Examples
 --------
 

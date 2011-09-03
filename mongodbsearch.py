@@ -127,9 +127,9 @@ class mongodb_search():
                         #calculate the inverse document frequency
                         idf = float(document_count) / float(token_counts[doc_token['token']]['doc'])
 
-                        #set the document score
-                        document['score'] = (tf * idf)
-                        documents_with_score.append(document)
+            #set the document score
+            document['score'] = (tf * idf)
+            documents_with_score.append(document)
 
         #sort the documents by their score
         documents_with_score.sort(key=lambda x: x['score'])
@@ -187,6 +187,7 @@ class mongodb_search():
         document_count = 0
         #perform the query on mongo
         if sort_condition:
+            
             documents = self.db.documents.find(query, fields=select_fields).sort(sort_condition[0], sort_condition[1]).limit(query_limit)
 
             document_count = documents.count()

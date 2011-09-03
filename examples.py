@@ -24,7 +24,7 @@ fields = {'Author': 'Michael Shermer', 'Price': 21.12 }
 mdb_search.index_document('id_2', text, facets=facets, ensure_index=['Author'], **fields)
 
 #Search for Document
-documents, facets, document_count = mdb_search.search('Ghost', fields=['Author', 'Price'])
+documents, facets, document_count = mdb_search.search('Ghost Gods', fields=['Author', 'Price', '_id'])
 
 print 'NORMAL SEARCH'
 print 'Document Count: %s' % document_count

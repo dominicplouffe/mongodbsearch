@@ -146,7 +146,7 @@ class mongodb_search():
 
         return documents_with_score
 
-    def search(self, text, max_recs=10, start=0, conditions=None, fields=[], scoring=None, hard_limit=False):
+    def search(self, text, max_recs=10, start=0, conditions=None, fields=[], scoring=None, hard_limit=False, return_facets=True):
         """Searches a list of documents from Mongo.
         param text: The query you wish to search on.
         type text: str.
@@ -212,12 +212,14 @@ class mongodb_search():
         for document in documents:
             document_list.append(document)
             if document['facets']:
-                for kvp in document['facets'].iteritems():
-                    facet = kvp[0]
-                    value = kvp[1]
-                    if facet not in facets: facets[facet] = {}
-                    if value not in facets[facet]: facets[facet][value] = 1
-                    else: facets[facet][value] += 1
+                if return_facets:
+                    for kvp in document['facets'].iteritems():
+                        facet = kvp[0]
+                        value = kvp[1]
+                        if facet not in facets: facets[facet] = {}
+                        if value not in facets[facet]: facets[facet][value] = 1
+                        else: facets[facet][value] += 1
+
                 document.pop('facets')
             document.pop('text')
 

@@ -6,10 +6,18 @@ import re
 
 class mongodb_search():
 
-    def __init__(self, db):
+    def __init__(
+            self,
+            db,
+            documents_collection_name='documents',
+            tokens_collection_name='tokens'
+    ):
         self.db = db
-        self.db.documents.ensure_index('text.token')
-        self.db.documents.ensure_index('last_save_date')
+        self.servers = ','.join([x[0] for x in self.db.connection.nodes])
+        self.collection_name = documents_collection_name
+        self.tokens_collection_name = tokens_collection_name
+        self.db[self.collection_name].ensure_index('text.token')
+        self.db[self.collection_name].ensure_index('last_save_date')
 
     def index_document(self, id, text, facets=None, ensureindex=[], **kwargs):
         """This method indexes a document.
@@ -26,7 +34,7 @@ class mongodb_search():
         """
 
         #try the find the document in the database
-        old_document = self.db.documents.find_one({'_id': id })
+        old_document = self.db[self.collection_name].find_one({'_id': id })
 
         #If the document exists, reverse the token counts (used for document ranking)
         #We reverse the token count and we re-insert them later on.
@@ -57,11 +65,11 @@ class mongodb_search():
         doc.update(kwargs)
 
         #save the document
-        self.db.documents.save(doc)
-        self.db.documents.ensure_index('text.token')
+        self.db[self.collection_name].save(doc)
+        self.db[self.collection_name].ensure_index('text.token')
 
         for idx in ensureindex:
-            self.db.documents.ensure_index(idx)
+            self.db[self.collection_name].ensure_index(idx)
 
         #increment token counts (used for document ranking)
         self.__increment_token_count(stemmed_tokens)
@@ -74,7 +82,7 @@ class mongodb_search():
 
         #Loop through the document tokens and decrement the token and document counts
         for token in document['text']:
-            self.db.tokens.update({'_id': token['token'] }, {'$inc': {'qty': -token['qty'], 'doc': -1 }})
+            self.db[self.tokens_collection_name].update({'_id': token['token'] }, {'$inc': {'qty': -token['qty'], 'doc': -1 }})
 
     def __increment_token_count(self, tokens):
         """Used to increment the token frequencies and document count.
@@ -87,8 +95,8 @@ class mongodb_search():
             token = token_qty[1]['token']
             qty = token_qty[1]['qty']
 
-            self.db.tokens.insert({'_id': token, 'qty': 0, 'doc': 0 })
-            self.db.tokens.update({'_id': token }, {'$inc': {'qty': qty, 'doc': 1 }})
+            self.db[self.tokens_collection_name].insert({'_id': token, 'qty': 0, 'doc': 0 })
+            self.db[self.tokens_collection_name].update({'_id': token }, {'$inc': {'qty': qty, 'doc': 1 }})
 
     def __tfidf_scoring(self, documents, stemmed_tokens, *agrs, **kwargs):
         """This method will sort the documents retrieved by a search query using a TF/IDF algorithm.
@@ -100,7 +108,7 @@ class mongodb_search():
         """
 
         #get the total amount of documents
-        document_count = self.db.documents.count()
+        document_count = self.db[self.collection_name].count()
 
         document_tokens_counts = {}
         token_counts = {}
@@ -120,7 +128,7 @@ class mongodb_search():
                     if doc_token['token'] == text_token:
                         #Get the overall token count from the database, if we haven't done so already
                         if doc_token['token'] not in token_counts:
-                            token_counts[doc_token['token']] = self.db.tokens.find_one({'_id': doc_token['token']})
+                            token_counts[doc_token['token']] = self.db[self.tokens_collection_name].find_one({'_id': doc_token['token']})
 
                         #calculate the term frequency
                         tf = float(doc_token['qty']) / float(len(document['text'])) 
@@ -188,11 +196,11 @@ class mongodb_search():
         #perform the query on mongo
         if sort_condition:
             
-            documents = self.db.documents.find(query, fields=select_fields).sort(sort_condition[0], sort_condition[1]).limit(query_limit)
+            documents = self.db[self.collection_name].find(query, fields=select_fields).sort(sort_condition[0], sort_condition[1]).limit(query_limit)
 
             document_count = documents.count()
         else:
-            documents = self.db.documents.find(query, fields=select_fields).limit(query_limit)
+            documents = self.db[self.collection_name].find(query, fields=select_fields).limit(query_limit)
             document_count = documents.count()
             
             #score the results

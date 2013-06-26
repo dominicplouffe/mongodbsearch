@@ -1,12 +1,12 @@
 mongodbsearch
 =============
 
-mongodbsearch is a simple Full-Text Indexer and Search engine for MongoDB built using python.
+mongodbsearch is a lightweight and easy to implement full-text indexing and search library for Python and Mongo.  If the number of documents will limited to a reasonable number (e.g. < 100k), this library should work really well for you.
 
 Requirements
 ------------
 
-- MongoDB (Tested on v 1.8.2)
+- MongoDB 
 - Python 2.6+ (I haven't tested on Python 3.x but is should work)
 - pymongo
 
@@ -75,5 +75,11 @@ Examples
 - Need to add Boolean Logic to search query
 - Some performance enhancements (reversing and re-increasing token counts)
 - Delete a document
+
+#What is this library good at and not so good at
+- TFIDF and Facets fails miserably when you have a large number of documents.  This is because the library needs to return every document to pymongo in order to perform counts.  May be able to use the aggregate frameowrk but more investigation is needed.
+
+
+
     
     

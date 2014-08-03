@@ -99,7 +99,9 @@ class mongodb_search():
             try:
                 self.db[self.tokens_collection_name].insert({'_id': token, 'qty': 0, 'doc': 0 })
             except DuplicateKeyError:
-                self.db[self.tokens_collection_name].update({'_id': token }, {'$inc': {'qty': qty, 'doc': 1 }})
+                pass
+
+            self.db[self.tokens_collection_name].update({'_id': token }, {'$inc': {'qty': qty, 'doc': 1 }})
 
     def __tfidf_scoring(self, documents, stemmed_tokens, *agrs, **kwargs):
         """This method will sort the documents retrieved by a search query using a TF/IDF algorithm.

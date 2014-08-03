@@ -205,6 +205,7 @@ class mongodb_search():
 
             document_count = documents.count()
         else:
+            print query
             documents = self.db[self.collection_name].find(query, fields=select_fields).limit(query_limit)
             document_count = documents.count()
 
@@ -221,8 +222,15 @@ class mongodb_search():
                     for kvp in document['facets'].iteritems():
                         facet = kvp[0]
                         value = kvp[1]
+
                         if facet not in facets: facets[facet] = {}
-                        if value not in facets[facet]: facets[facet][value] = 1
+                        if type(value) == list:
+                            for v in value:
+                                if v not in facets[facet]:
+                                    facets[facet][v] = 1
+                                else:
+                                    facets[facet][v] += 1
+                        elif value not in facets[facet]: facets[facet][value] = 1
                         else: facets[facet][value] += 1
 
                 document.pop('facets')

@@ -1,4 +1,5 @@
 from pymongo import Connection
+from pymongo.errors import DuplicateKeyError
 import pymongo
 import datetime
 import stemmer
@@ -45,7 +46,7 @@ class mongodb_search():
 
         #get all the tokens
         tokens = re.findall('[0-9a-z]+', text, re.IGNORECASE)
-        
+
         #compute all the counts for the keywords and stem them
         stemmed_tokens = {}
         for token in tokens:
@@ -95,8 +96,10 @@ class mongodb_search():
             token = token_qty[1]['token']
             qty = token_qty[1]['qty']
 
-            self.db[self.tokens_collection_name].insert({'_id': token, 'qty': 0, 'doc': 0 })
-            self.db[self.tokens_collection_name].update({'_id': token }, {'$inc': {'qty': qty, 'doc': 1 }})
+            try:
+                self.db[self.tokens_collection_name].insert({'_id': token, 'qty': 0, 'doc': 0 })
+            except DuplicateKeyError:
+                self.db[self.tokens_collection_name].update({'_id': token }, {'$inc': {'qty': qty, 'doc': 1 }})
 
     def __tfidf_scoring(self, documents, stemmed_tokens, *agrs, **kwargs):
         """This method will sort the documents retrieved by a search query using a TF/IDF algorithm.
@@ -118,7 +121,7 @@ class mongodb_search():
         for document in documents:
             #initialaize dictionary which will contain the document and the tokens/counts
             document_tokens_counts[document['_id']] = {'document': document}
-            
+
             #loop through the tokens in the document
             for doc_token in document['text']:
                 #loop through all the tokens which were created by stemming the keywords
@@ -131,7 +134,7 @@ class mongodb_search():
                             token_counts[doc_token['token']] = self.db[self.tokens_collection_name].find_one({'_id': doc_token['token']})
 
                         #calculate the term frequency
-                        tf = float(doc_token['qty']) / float(len(document['text'])) 
+                        tf = float(doc_token['qty']) / float(len(document['text']))
                         #calculate the inverse document frequency
                         idf = float(document_count) / float(token_counts[doc_token['token']]['doc'])
 
@@ -174,7 +177,7 @@ class mongodb_search():
 
         #Get the tokens from the text field and stem them
         tokens = re.findall('[0-9a-z]+', text, re.IGNORECASE)
-        stemmed_tokens = [] 
+        stemmed_tokens = []
         for token in tokens:
             token = stemmer.Stem(token)
             stemmed_tokens.append(token)
@@ -195,14 +198,14 @@ class mongodb_search():
         document_count = 0
         #perform the query on mongo
         if sort_condition:
-            
+
             documents = self.db[self.collection_name].find(query, fields=select_fields).sort(sort_condition[0], sort_condition[1]).limit(query_limit)
 
             document_count = documents.count()
         else:
             documents = self.db[self.collection_name].find(query, fields=select_fields).limit(query_limit)
             document_count = documents.count()
-            
+
             #score the results
             documents = scoring(documents, stemmed_tokens)
 
